@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "indent": [true, 2],
+    "whitespace": [true,
+      "check-branch",
+      "check-operator",
+      "check-separator",
+      "check-typecast"
+    ]
+  }
+}
