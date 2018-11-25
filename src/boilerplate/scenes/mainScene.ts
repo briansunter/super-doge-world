@@ -1,12 +1,13 @@
 export class MainScene extends Phaser.Scene {
   private phaserSprite: Phaser.GameObjects.Sprite;
   private platforms: Phaser.Physics.Arcade.StaticGroup;
-  private player: Phaser.Physics.Arcade.Sprite;
+  private hero: Phaser.Physics.Arcade.Sprite;
   private squishy: Phaser.Physics.Arcade.Sprite;
   private cursors: CursorKeys;
   private map: Phaser.Tilemaps.Tilemap;
   private layer: Phaser.Tilemaps.StaticTilemapLayer;
-  private jumpTime: number;
+  private jumpTime: number = 0;
+  private hasReleased: boolean = true;
 
   constructor() {
     super({
@@ -18,7 +19,7 @@ export class MainScene extends Phaser.Scene {
     this.load.tilemapTiledJSON('mario', 'assets/boilerplate/super_mario.json');
     this.load.image('tiles', 'assets/boilerplate/super_mario.png');
     this.load.image('squishy', 'assets/boilerplate/squishy.png')
-    this.load.spritesheet('player',
+    this.load.spritesheet('hero',
                           'assets/boilerplate/shiba.png',
                           { frameWidth: 32, frameHeight: 32 });
   };
@@ -38,40 +39,40 @@ export class MainScene extends Phaser.Scene {
     this.layer = this.map.createStaticLayer('World1',tileSet,0,0);
     this.layer.setScale(2);
 
-    this.player = this.physics.add.sprite(100, 350, 'player').setScale(2);
-    this.player.setBounce(0.2);
-    this.physics.add.collider(this.player, this.layer);
+    this.hero = this.physics.add.sprite(100, 350, 'hero').setScale(2);
+    this.hero.setBounce(0.2);
+    this.physics.add.collider(this.hero, this.layer);
 
     this.squishy = this.physics.add.sprite(300, 350, 'squishy').setScale(2);
     this.squishy.setBounce(1.01);
     this.physics.add.collider(this.squishy, this.layer);
 
-    this.physics.add.overlap(this.player, this.squishy, this.collideEnemy, null, this)
+    this.physics.add.overlap(this.hero, this.squishy, this.collideEnemy, null, this)
 
 
-    this.anims.create({
-      key: 'left',
-      frames: this.anims.generateFrameNumbers('player', { start: 12, end: 15 }),
-      frameRate: 10,
-      repeat: -1
-    });
+    // this.anims.create({
+    //   key: 'left',
+    //   frames: this.anims.generateFrameNumbers('hero', { start: 12, end: 15 }),
+    //   frameRate: 10,
+    //   repeat: -1
+    // });
 
-    this.anims.create({
-      key: 'turn',
-      frames: [{ key: 'player', frame: 24 }],
-      frameRate: 20
-    });
+    // this.anims.create({
+    //   key: 'turn',
+    //   frames: [{ key: 'hero', frame: 24 }],
+    //   frameRate: 20
+    // });
 
     this.anims.create({
       key: 'right',
-      frames: this.anims.generateFrameNumbers('player', { start: 4, end: 7 }),
+      frames: this.anims.generateFrameNumbers('hero', { start: 4, end: 7 }),
       frameRate: 10,
       repeat: -1
     });
 
     this.anims.create({
       key: 'jumping',
-      frames: this.anims.generateFrameNumbers('player', { start: 32, end: 34 }),
+      frames: this.anims.generateFrameNumbers('hero', { start: 32, end: 34 }),
       frameRate: 10,
       repeat: -1
     });
@@ -79,40 +80,43 @@ export class MainScene extends Phaser.Scene {
   }
 
   update(): void {
-    this.cameras.main.scrollX = this.player.x - 400;
+    this.cameras.main.scrollX = this.hero.x - 400;
 
-    this.player.setVelocityX(130);
+    this.hero.setVelocityX(130);
+    this.hero.anims.play('right', true);
 
     // if (this.cursors.left.isDown) {
-    //   this.player.setVelocityX(-260);
-    //   this.player.anims.play('left', true);
+    //   this.hero.setVelocityX(-260);
+    //   this.hero.anims.play('left', true);
     // }
     // else if (this.cursors.right.isDown) {
 
-    //   this.player.anims.play('right', true);
+    //   this.hero.anims.play('right', true);
     // }
     // else {
-    //   this.player.setVelocityX(0);
+    //   this.hero.setVelocityX(0);
 
-    //   this.player.anims.play('turn');
+    //   this.hero.anims.play('turn');
     // }
-    if (this.cursors.up.isDown || this.input.activePointer.isDown )  {
-      if (this.player.body.onFloor()){
+    if (this.cursors.up.isDown || this.input.activePointer.isDown)  {
+      if (this.hero.body.onFloor() && this.hasReleased){
         this.jumpTime = this.time.now;
       }
       if (this.time.now - this.jumpTime < 200) {
-        this.player.setVelocityY(-450);
+        this.hero.setVelocityY(-450);
       }
-
+      this.hasReleased = false;
+    } else {
+      this.hasReleased = true;
     }
 
-    if (! this.player.body.onFloor()) {
-      this.player.anims.play('jumping', true);
+    if (! this.hero.body.onFloor()) {
+      this.hero.anims.play('jumping', true);
     }
   }
 
-  collideEnemy(player:Phaser.Physics.Arcade.Sprite, enemy:Phaser.Physics.Arcade.Sprite):void {
-    if (player.body.position.y < enemy.body.position.y){
+  collideEnemy(hero:Phaser.Physics.Arcade.Sprite, enemy:Phaser.Physics.Arcade.Sprite):void {
+    if (hero.body.position.y < enemy.body.position.y){
       enemy.disableBody(true, true);
     }
   }
