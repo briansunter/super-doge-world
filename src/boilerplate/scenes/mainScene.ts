@@ -1,14 +1,10 @@
-/**
- * @author       Digitsensitive <digit.sensitivee@gmail.com>
- * @copyright    2018 Digitsensitive
- * @license      Digitsensitive
- */
-
 export class MainScene extends Phaser.Scene {
   private phaserSprite: Phaser.GameObjects.Sprite;
   private platforms: Phaser.Physics.Arcade.StaticGroup;
   private player: Phaser.Physics.Arcade.Sprite;
   private cursors: CursorKeys;
+  private map: Phaser.Tilemaps.Tilemap;
+  private layer: Phaser.Tilemaps.StaticTilemapLayer;
 
   constructor() {
     super({
@@ -17,62 +13,65 @@ export class MainScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.image("logo", "assets/boilerplate/phaser.png");
-    this.load.image("sky", "assets/tutorial/sky.png");
-    this.load.image('star', 'assets/star.png');
-    this.load.image("ground", "assets/tutorial/pf2.png")
-    this.load.spritesheet('dude',
-                          'assets/tutorial/shiba.png',
+    this.load.tilemapTiledJSON('mario', 'assets/boilerplate/super_mario.json');
+    this.load.image('tiles', 'assets/boilerplate/super_mario.png');
+    this.load.spritesheet('player',
+                          'assets/boilerplate/shiba.png',
                           { frameWidth: 32, frameHeight: 32 });
-
   };
 
   create(): void {
-    this.add.image(400, 300, 'sky');
-    this.platforms = this.physics.add.staticGroup();
-    this.platforms.create(400, 568, "ground").setScale(2).refreshBody();
-    this.platforms.create(600, 400, 'ground');
-    this.platforms.create(50, 250, 'ground');
-    this.platforms.create(750, 220, 'ground');
-    this.player = this.physics.add.sprite(100, 350, "dude").setScale(2);
-    this.player.setBounce(0.2);
-    this.player.setCollideWorldBounds(true);
     this.cursors = this.input.keyboard.createCursorKeys();
+
+    this.cameras.main.setBounds(0, 0, 6400, 600).setName('main');
+
+    this.map = this.add.tilemap('mario');
+    const tileSet = this.map.addTilesetImage('SuperMarioBros-World1-1', 'tiles');
+    this.map.setCollisionBetween(15, 16);
+    this.map.setCollisionBetween(20, 25);
+    this.map.setCollisionBetween(27, 29);
+    this.map.setCollision(40);
+
+    this.layer = this.map.createStaticLayer('World1',tileSet,0,0);
+    this.layer.setScale(2);
+
+    this.player = this.physics.add.sprite(100, 350, 'player').setScale(2);
+    this.player.setBounce(0.2);
+    this.physics.add.collider(this.player, this.layer);
 
     this.anims.create({
       key: 'left',
-      frames: this.anims.generateFrameNumbers('dude', { start: 12, end: 15 }),
+      frames: this.anims.generateFrameNumbers('player', { start: 12, end: 15 }),
       frameRate: 10,
       repeat: -1
     });
 
     this.anims.create({
       key: 'turn',
-      frames: [{ key: 'dude', frame: 24 }],
+      frames: [{ key: 'player', frame: 24 }],
       frameRate: 20
     });
 
     this.anims.create({
       key: 'right',
-      frames: this.anims.generateFrameNumbers('dude', { start: 4, end: 7 }),
+      frames: this.anims.generateFrameNumbers('player', { start: 4, end: 7 }),
       frameRate: 10,
       repeat: -1
     });
 
     this.anims.create({
       key: 'jumping',
-      frames: this.anims.generateFrameNumbers('dude', { start: 32, end: 34 }),
+      frames: this.anims.generateFrameNumbers('player', { start: 32, end: 34 }),
       frameRate: 10,
       repeat: -1
     });
-
-    this.physics.add.collider(this.player, this.platforms);
   }
 
   update(): void {
+    this.cameras.main.scrollX = this.player.x - 400;
+
     if (this.cursors.left.isDown) {
       this.player.setVelocityX(-260);
-
       this.player.anims.play('left', true);
     }
     else if (this.cursors.right.isDown) {
@@ -86,11 +85,11 @@ export class MainScene extends Phaser.Scene {
       this.player.anims.play('turn');
     }
 
-    if (this.cursors.up.isDown && this.player.body.touching.down) {
-      this.player.setVelocityY(-430);
+    if (this.cursors.up.isDown && this.player.body.onFloor()) {
+      this.player.setVelocityY(-330);
     }
 
-    if (! this.player.body.touching.down) {
+    if (! this.player.body.onFloor()) {
       this.player.anims.play('jumping', true);
     }
   }

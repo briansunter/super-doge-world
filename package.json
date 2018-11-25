@@ -1,7 +1,7 @@
 {
   "name": "phaser3-typescript",
   "version": "1.2.2",
-  "description": "Boilerplate, Tutorials, Cheat Sheets and more for Phaser 3 in Typescript",
+  "description": "Sheeba",
   "keywords": [
     "Phaser",
     "Phaser 3",
@@ -13,6 +13,7 @@
   ],
   "devDependencies": {
     "expose-loader": "0.7.5",
+    "gh-pages-deploy": "^0.5.0",
     "ts-loader": "5.3.0",
     "typescript": "3.1.6",
     "webpack": "4.25.1",
@@ -24,19 +25,17 @@
   },
   "scripts": {
     "dev": "webpack --mode development && webpack-dev-server --mode development",
-    "build": "webpack --mode production && webpack-dev-server --mode production"
+    "build": "webpack --mode production && webpack-dev-server --mode production",
+    "deploy": "gh-pages-deploy"
+
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/digitsensitive/phaser3-typescript.git"
+    "url": "git+https://github.com/briansunter/super-doge-world.git"
   },
   "author": {
-    "name": "digitsensitive",
-    "email": "digit.sensitivee@gmail.com"
+    "name": "briansunter"
   },
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/digitsensitive/phaser3-typescript/issues"
-  },
-  "homepage": "https://github.com/digitsensitive/phaser3-typescript#readme"
+  "homepage": "https://github.com/briansunter/super-doge-world"
 }

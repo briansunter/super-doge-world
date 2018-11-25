@@ -1,9 +1,3 @@
-/**
- * @author       Digitsensitive <digit.sensitivee@gmail.com>
- * @copyright    2018 Digitsensitive
- * @license      Digitsensitive
- */
-
 /// <reference path="../phaser.d.ts"/>
 
 import "phaser";
