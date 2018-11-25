@@ -2,9 +2,11 @@ export class MainScene extends Phaser.Scene {
   private phaserSprite: Phaser.GameObjects.Sprite;
   private platforms: Phaser.Physics.Arcade.StaticGroup;
   private player: Phaser.Physics.Arcade.Sprite;
+  private squishy: Phaser.Physics.Arcade.Sprite;
   private cursors: CursorKeys;
   private map: Phaser.Tilemaps.Tilemap;
   private layer: Phaser.Tilemaps.StaticTilemapLayer;
+  private jumpTime: number;
 
   constructor() {
     super({
@@ -15,6 +17,7 @@ export class MainScene extends Phaser.Scene {
   preload(): void {
     this.load.tilemapTiledJSON('mario', 'assets/boilerplate/super_mario.json');
     this.load.image('tiles', 'assets/boilerplate/super_mario.png');
+    this.load.image('squishy', 'assets/boilerplate/squishy.png')
     this.load.spritesheet('player',
                           'assets/boilerplate/shiba.png',
                           { frameWidth: 32, frameHeight: 32 });
@@ -38,6 +41,13 @@ export class MainScene extends Phaser.Scene {
     this.player = this.physics.add.sprite(100, 350, 'player').setScale(2);
     this.player.setBounce(0.2);
     this.physics.add.collider(this.player, this.layer);
+
+    this.squishy = this.physics.add.sprite(300, 350, 'squishy').setScale(2);
+    this.squishy.setBounce(1.01);
+    this.physics.add.collider(this.squishy, this.layer);
+
+    this.physics.add.overlap(this.player, this.squishy, this.collideEnemy, null, this)
+
 
     this.anims.create({
       key: 'left',
@@ -65,32 +75,45 @@ export class MainScene extends Phaser.Scene {
       frameRate: 10,
       repeat: -1
     });
+
   }
 
   update(): void {
     this.cameras.main.scrollX = this.player.x - 400;
 
-    if (this.cursors.left.isDown) {
-      this.player.setVelocityX(-260);
-      this.player.anims.play('left', true);
-    }
-    else if (this.cursors.right.isDown) {
-      this.player.setVelocityX(260);
+    this.player.setVelocityX(130);
 
-      this.player.anims.play('right', true);
-    }
-    else {
-      this.player.setVelocityX(0);
+    // if (this.cursors.left.isDown) {
+    //   this.player.setVelocityX(-260);
+    //   this.player.anims.play('left', true);
+    // }
+    // else if (this.cursors.right.isDown) {
 
-      this.player.anims.play('turn');
-    }
+    //   this.player.anims.play('right', true);
+    // }
+    // else {
+    //   this.player.setVelocityX(0);
 
-    if (this.cursors.up.isDown && this.player.body.onFloor()) {
-      this.player.setVelocityY(-330);
+    //   this.player.anims.play('turn');
+    // }
+    if (this.cursors.up.isDown || this.input.activePointer.isDown )  {
+      if (this.player.body.onFloor()){
+        this.jumpTime = this.time.now;
+      }
+      if (this.time.now - this.jumpTime < 200) {
+        this.player.setVelocityY(-450);
+      }
+
     }
 
     if (! this.player.body.onFloor()) {
       this.player.anims.play('jumping', true);
+    }
+  }
+
+  collideEnemy(player:Phaser.Physics.Arcade.Sprite, enemy:Phaser.Physics.Arcade.Sprite):void {
+    if (player.body.position.y < enemy.body.position.y){
+      enemy.disableBody(true, true);
     }
   }
 }
