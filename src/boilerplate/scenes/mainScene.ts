@@ -8,6 +8,7 @@ export class MainScene extends Phaser.Scene {
   private layer: Phaser.Tilemaps.StaticTilemapLayer;
   private jumpTime: number = 0;
   private hasReleased: boolean = true;
+  private coins: Phaser.GameObjects.Sprite[];
 
   constructor() {
     super({
@@ -22,6 +23,10 @@ export class MainScene extends Phaser.Scene {
     this.load.spritesheet('hero',
                           'assets/boilerplate/shiba.png',
                           { frameWidth: 32, frameHeight: 32 });
+
+    this.load.spritesheet('bitcoin',
+                          'assets/boilerplate/bitcoin.png',
+                          { frameWidth: 32, frameHeight: 32 });
   };
 
   create(): void {
@@ -31,20 +36,33 @@ export class MainScene extends Phaser.Scene {
 
     this.map = this.add.tilemap('mario');
     const tileSet = this.map.addTilesetImage('SuperMarioBros-World1-1', 'tiles');
+
     this.map.setCollisionBetween(15, 16);
     this.map.setCollisionBetween(20, 25);
     this.map.setCollisionBetween(27, 29);
     this.map.setCollision(40);
 
+    this.anims.create({
+      key: 'spin',
+      frames: this.anims.generateFrameNumbers('bitcoin', { start: 0, end: 5 }),
+      frameRate: 10,
+      repeat: -1
+    });
     this.layer = this.map.createStaticLayer('World1',tileSet,0,0);
     this.layer.setScale(2);
 
+    this.coins = this.map.createFromTiles(11, 1, {key: 'bitcoin', scale: 2});
+    this.coins.forEach(c => {
+      c.anims.play('spin', true);
+      c.x = c.x + c.width / 2;
+    });
+
     this.hero = this.physics.add.sprite(100, 350, 'hero').setScale(2);
-    this.hero.setBounce(0.2);
+    this.hero.setBounce(0.1);
     this.physics.add.collider(this.hero, this.layer);
 
-    this.squishy = this.physics.add.sprite(300, 350, 'squishy').setScale(2);
-    this.squishy.setBounce(1.01);
+    this.squishy = this.physics.add.sprite(300, 350, 'bitcoin').setScale(2);
+    // this.squishy.setBounce(1.01);
     this.physics.add.collider(this.squishy, this.layer);
 
     this.physics.add.overlap(this.hero, this.squishy, this.collideEnemy, null, this)
@@ -77,6 +95,9 @@ export class MainScene extends Phaser.Scene {
       repeat: -1
     });
 
+
+    this.squishy.anims.play('spin', true);
+    // this.anims.play('spin', coins);
   }
 
   update(): void {
