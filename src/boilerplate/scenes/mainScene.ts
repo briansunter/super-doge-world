@@ -1,6 +1,6 @@
 export class MainScene extends Phaser.Scene {
   private phaserSprite: Phaser.GameObjects.Sprite;
-  private platforms: Phaser.Physics.Arcade.StaticGroup;
+  private platforms: Phaser.Physics.Arcade.Group;
   private hero: Phaser.Physics.Arcade.Sprite;
   private squishy: Phaser.Physics.Arcade.Sprite;
   private cursors: CursorKeys;
@@ -9,27 +9,34 @@ export class MainScene extends Phaser.Scene {
   private jumpTime: number = 0;
   private hasReleased: boolean = true;
   private coins: Phaser.GameObjects.Sprite[];
+  private coinsGroup: Phaser.Physics.Arcade.StaticGroup;
+  private coinsCollected: number = 0;
+  private score: Phaser.GameObjects.Text;
+  private tilemapPath: string;
 
-  constructor() {
+  constructor(name: string, tilemapPath: string) {
     super({
-      key: "MainScene"
+      key: name
     });
+    this.tilemapPath = tilemapPath;
   }
-
+  //assets/boilerplate/super_mario.json
   preload(): void {
-    this.load.tilemapTiledJSON('mario', 'assets/boilerplate/super_mario.json');
+    this.load.tilemapTiledJSON('mario', this.tilemapPath);
     this.load.image('tiles', 'assets/boilerplate/super_mario.png');
     this.load.image('squishy', 'assets/boilerplate/squishy.png')
     this.load.spritesheet('hero',
-                          'assets/boilerplate/shiba.png',
-                          { frameWidth: 32, frameHeight: 32 });
+      'assets/boilerplate/shiba.png',
+      { frameWidth: 32, frameHeight: 32 });
 
     this.load.spritesheet('bitcoin',
-                          'assets/boilerplate/bitcoin.png',
-                          { frameWidth: 32, frameHeight: 32 });
+      'assets/boilerplate/bitcoin.png',
+      { frameWidth: 32, frameHeight: 32 });
   };
 
   create(): void {
+    this.physics.world.drawDebug
+
     this.cursors = this.input.keyboard.createCursorKeys();
 
     this.cameras.main.setBounds(0, 0, 6400, 600).setName('main');
@@ -48,38 +55,27 @@ export class MainScene extends Phaser.Scene {
       frameRate: 10,
       repeat: -1
     });
-    this.layer = this.map.createStaticLayer('World1',tileSet,0,0);
-    this.layer.setScale(2);
 
-    this.coins = this.map.createFromTiles(11, 1, {key: 'bitcoin', scale: 2});
-    this.coins.forEach(c => {
-      c.anims.play('spin', true);
-      c.x = c.x + c.width / 2;
-    });
+    this.layer = this.map.createStaticLayer('World1', tileSet, 0, 0);
+    this.layer.setScale(2);
 
     this.hero = this.physics.add.sprite(100, 350, 'hero').setScale(2);
     this.hero.setBounce(0.1);
     this.physics.add.collider(this.hero, this.layer);
 
-    this.squishy = this.physics.add.sprite(300, 350, 'bitcoin').setScale(2);
-    // this.squishy.setBounce(1.01);
-    this.physics.add.collider(this.squishy, this.layer);
+    this.coins = this.map.createFromTiles(11, 1, { key: 'bitcoin', scale: 2 });
 
-    this.physics.add.overlap(this.hero, this.squishy, this.collideEnemy, null, this)
+    this.coinsGroup = this.physics.add.staticGroup();
+    this.coins.forEach(c => {
+      c.anims.play('spin', true);
+      c.x = c.x + c.width / 2;
+      this.coinsGroup.add(c);
+    });
 
+    this.physics.add.overlap(this.hero, this.coinsGroup, this.collectCoin, null, this);
 
-    // this.anims.create({
-    //   key: 'left',
-    //   frames: this.anims.generateFrameNumbers('hero', { start: 12, end: 15 }),
-    //   frameRate: 10,
-    //   repeat: -1
-    // });
-
-    // this.anims.create({
-    //   key: 'turn',
-    //   frames: [{ key: 'hero', frame: 24 }],
-    //   frameRate: 20
-    // });
+    this.score = this.add.text(window.innerWidth - 300, 16, 'coins: 0', { fontSize: '32px', fill: '#000' });
+    this.score.setScrollFactor(0);
 
     this.anims.create({
       key: 'right',
@@ -94,51 +90,39 @@ export class MainScene extends Phaser.Scene {
       frameRate: 10,
       repeat: -1
     });
-
-
-    this.squishy.anims.play('spin', true);
-    // this.anims.play('spin', coins);
   }
 
   update(): void {
+    this.hero.setVelocityX(100);
+    this.hero.anims.play('right', true);
     this.cameras.main.scrollX = this.hero.x - 400;
 
-    this.hero.setVelocityX(130);
-    this.hero.anims.play('right', true);
-
-    // if (this.cursors.left.isDown) {
-    //   this.hero.setVelocityX(-260);
-    //   this.hero.anims.play('left', true);
-    // }
-    // else if (this.cursors.right.isDown) {
-
-    //   this.hero.anims.play('right', true);
-    // }
-    // else {
-    //   this.hero.setVelocityX(0);
-
-    //   this.hero.anims.play('turn');
-    // }
-    if (this.cursors.up.isDown || this.input.activePointer.isDown)  {
-      if (this.hero.body.onFloor() && this.hasReleased){
+    if (this.cursors.up.isDown || this.input.activePointer.isDown) {
+      if (this.hero.body.onFloor() && this.hasReleased) {
         this.jumpTime = this.time.now;
-      }
-      if (this.time.now - this.jumpTime < 200) {
-        this.hero.setVelocityY(-450);
       }
       this.hasReleased = false;
     } else {
       this.hasReleased = true;
     }
 
-    if (! this.hero.body.onFloor()) {
+    if (this.time.now - this.jumpTime < 200) {
+      this.hero.setVelocityY(-450);
+    }
+
+    if (!this.hero.body.onFloor()) {
       this.hero.anims.play('jumping', true);
+    }
+
+    if (this.hero.body.y > 1000) {
+      console.log("DED");
+      this.scene.start("MainScene");
     }
   }
 
-  collideEnemy(hero:Phaser.Physics.Arcade.Sprite, enemy:Phaser.Physics.Arcade.Sprite):void {
-    if (hero.body.position.y < enemy.body.position.y){
-      enemy.disableBody(true, true);
-    }
+  collectCoin(hero: Phaser.GameObjects.Sprite, coin: Phaser.GameObjects.Sprite): void {
+    this.coinsCollected++;
+    this.score.setText(`coins: ${this.coinsCollected}`);
+    coin.destroy();
   }
 }
