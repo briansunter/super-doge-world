@@ -13,16 +13,21 @@ export class MainScene extends Phaser.Scene {
   private coinsCollected: number = 0;
   private score: Phaser.GameObjects.Text;
   private tilemapPath: string;
+  private nextSceneKey: string = "DogeScene";
+  private name: string;
 
-  constructor(name: string, tilemapPath: string) {
+
+  constructor(name: string, tilemapPath: string, nextSceneKey?: string) {
     super({
-      key: name
+      key: name,
     });
+    this.name = name;
     this.tilemapPath = tilemapPath;
+    this.nextSceneKey = nextSceneKey;
   }
   //assets/boilerplate/super_mario.json
   preload(): void {
-    this.load.tilemapTiledJSON('mario', this.tilemapPath);
+    this.load.tilemapTiledJSON(this.name, this.tilemapPath);
     this.load.image('tiles', 'assets/boilerplate/super_mario.png');
     this.load.image('squishy', 'assets/boilerplate/squishy.png')
     this.load.spritesheet('hero',
@@ -41,7 +46,7 @@ export class MainScene extends Phaser.Scene {
 
     this.cameras.main.setBounds(0, 0, 6400, 600).setName('main');
 
-    this.map = this.add.tilemap('mario');
+    this.map = this.add.tilemap(this.name);
     const tileSet = this.map.addTilesetImage('SuperMarioBros-World1-1', 'tiles');
 
     this.map.setCollisionBetween(15, 16);
@@ -98,7 +103,7 @@ export class MainScene extends Phaser.Scene {
     this.cameras.main.scrollX = this.hero.x - 400;
 
     if (this.cursors.up.isDown || this.input.activePointer.isDown) {
-      if (this.hero.body.onFloor() && this.hasReleased) {
+      if (this.hero.body.onFloor()) {
         this.jumpTime = this.time.now;
       }
       this.hasReleased = false;
@@ -115,12 +120,15 @@ export class MainScene extends Phaser.Scene {
     }
 
     if (this.hero.body.y > 1000) {
-      console.log("DED");
-      this.scene.start("MainScene");
+      this.scene.restart()
+    }
+
+    if (this.hero.x > this.map.widthInPixels * 2 * .9) {
+      this.scene.start(this.nextSceneKey)
     }
   }
 
-  collectCoin(hero: Phaser.GameObjects.Sprite, coin: Phaser.GameObjects.Sprite): void {
+  collectCoin(_, coin: Phaser.GameObjects.Sprite): void {
     this.coinsCollected++;
     this.score.setText(`coins: ${this.coinsCollected}`);
     coin.destroy();
